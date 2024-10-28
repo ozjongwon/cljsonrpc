@@ -41,18 +41,18 @@
    (cond-> {:method method :params params :id id}
      (= json-rpc-2 version) (assoc :jsonrpc version))))
 
-(defn ->clj
-  [message]
-  (let [{version "jsonrpc" method "method" params "params" id "id"}
-        (json/read-str message)
-        resolved (->> method
-                      symbol
-                      resolve)]
-    (if (and resolved (->> resolved
-                           deref
-                           ifn?))
-      (apply resolved params)
-      :no-such-fn)))
+;; (defn ->clj
+;;   [message]
+;;   (let [{version "jsonrpc" method "method" params "params" id "id"}
+;;         (json/read-str message)
+;;         resolved (->> method
+;;                       symbol
+;;                       resolve)]
+;;     (if (and resolved (->> resolved
+;;                            deref
+;;                            ifn?))
+;;       (apply resolved params)
+;;       :no-such-fn)))
 
 (defprotocol ResponseResult 
   (make-response [this id version]))
@@ -74,10 +74,10 @@
       (= json-rpc-2 version) (assoc :jsonrpc version)
       (not= json-rpc-2 version) (assoc :result nil))))
 
-(defn clj->
-  ([message id]
-   (clj-> message id nil))
-  ([message id version]
-   (-> message
-       (make-response id version)
-       json/write-str)))
+;; (defn clj->
+;;   ([message id]
+;;    (clj-> message id nil))
+;;   ([message id version]
+;;    (-> message
+;;        (make-response id version)
+;;        json/write-str)))
