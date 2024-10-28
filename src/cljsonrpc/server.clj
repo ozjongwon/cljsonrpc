@@ -45,12 +45,27 @@
         resolved (->> method
                       symbol
                       resolve)]
-    (if (and resolved (->> resolved
-                           deref
-                           ifn?))
-      (jr/make-response (apply resolved params) id version)
-      ;; FIXME try-catch
-      :no-such-fn)))
+    (try
+      (if (and resolved (->> resolved
+                             deref
+                             ifn?))
+        (jr/make-response (apply resolved params) id version)
+        (throw (ex-info "FIXME!" {:code 1 :data m})))
+      (catch clojure.lang.ExceptionInfo e
+        (let [{:keys [code data]} (ex-data e)]
+          (-> (if (= version jr/json-rpc-2)
+                {:data data
+                 :code code
+                 :message (ex-message e)}
+                {:message (ex-message e)})
+              jr/map->JsonRpcError
+              (jr/make-response id version))))
+      (catch Exception e
+        (-> (if (= jr/json-rpc-2 version)
+              {:data "FIXME-data" :code 2 :message "FIXME-message"}
+              {:message "FIXME-message"})
+            jr/map->JsonRpcError
+            (jr/make-response id version))))))
 
 (def json-rpc-server (start-server (json-rpc-handler process-json-rpc) 8888))
 
