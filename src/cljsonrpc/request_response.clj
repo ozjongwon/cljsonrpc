@@ -39,8 +39,7 @@
    (make-request method params id nil))
   ([method params id version]
    (cond-> {:method method :params params :id id}
-     (= json-rpc-2 version) (assoc :jsonrpc version)
-     :finally json/write-str)))
+     (= json-rpc-2 version) (assoc :jsonrpc version))))
 
 (defn ->clj
   [message]
