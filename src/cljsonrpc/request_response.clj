@@ -32,13 +32,15 @@
   (:require [clojure.data.json :as json]
             [medley.core :as med]))
 
+(defonce json-rpc-2 "2.0")
+
 (defn make-request
   ([method params id]
    (make-request method params id nil))
   ([method params id version]
-   (-> {:method method :params params :id id}
-       (med/assoc-some :jsonrpc version)
-       json/write-str)))
+   (cond-> {:method method :params params :id id}
+     (= json-rpc-2 version) (assoc :jsonrpc version)
+     :finally json/write-str)))
 
 (defn ->clj
   [message]
@@ -53,20 +55,30 @@
       (apply resolved params)
       :no-such-fn)))
 
-(defn make-response
-  ([message context]
-   (make-response message context false))
-  ([message context error?]
-   ;; context - {:jsonrpc version :id id}
-   (json/write-str (assoc context
-                          (if error?
-                            :error
-                            :result)
-                          message))))
+(defprotocol ResponseResult 
+  (make-response [this id version]))
+
+(extend-protocol ResponseResult
+  java.lang.Object
+  (make-response [this id version]
+    (cond-> {:result this :id id}
+      (= json-rpc-2 version) (assoc :jsonrpc version)
+      (not= json-rpc-2 version) (assoc :error nil))))
+
+(defrecord JsonRpcError [code message data]
+  ResponseResult
+  (make-response [this id version]
+    (cond-> {:error (if code ;; v2
+                      (med/remove-vals nil? this)
+                      message)
+             :id id}
+      (= json-rpc-2 version) (assoc :jsonrpc version)
+      (not= json-rpc-2 version) (assoc :result nil))))
+
 (defn clj->
   ([message id]
    (clj-> message id nil))
   ([message id version]
-   (->> version
-        (med/assoc-some {:result message :id id} :jsonrpc)
-        (make-response message))))
+   (-> message
+       (make-response id version)
+       json/write-str)))
