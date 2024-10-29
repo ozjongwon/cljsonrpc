@@ -32,26 +32,19 @@
        (catch Exception _
          (throw (ex-info "Parse error!" {:code :parse-error})))))
 
-(defn process-json-rpc
-  [json-str]
-  (let [parsed-json (try (read-json json-str)
-                         (catch clojure.lang.ExceptionInfo e
-                           e))
-        {version "jsonrpc" method "method" params "params" id "id"} (when (map? parsed-json)
-                                                                      parsed-json)]
-    (try (cond (instance? clojure.lang.ExceptionInfo parsed-json)
-               (throw parsed-json)
-
-               (or (and version (not= version jr/json-rpc-2))
+(defn process-request [m]
+  (let [{version "jsonrpc" method "method" params "params" id "id"} (when (map? m)
+                                                                      m)]
+    (try (cond (or (and version (not= version jr/json-rpc-2))
                    (nil? method)
                    (not (vector? params)))
-               (throw (ex-info "Invalid request!" {:code :invalid-request :data parsed-json}))
+               (throw (ex-info "Invalid request!" {:code :invalid-request :data m}))
 
                :else
                (if-let [f (find-fn method)]
                  (when id ;; not notification
                    (jr/make-response (apply f params) id version))
-                 (throw (ex-info "Method not found!" {:code :method-not-found :data parsed-json}))))
+                 (throw (ex-info "Method not found!" {:code :method-not-found :data m}))))
          ;; code	message	meaning
          ;; -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
 
@@ -67,54 +60,78 @@
          (catch Exception e
            (when id
              (-> (:internal-error predefined-errors)
-                 (assoc :data parsed-json)
+                 (assoc :data m)
                  jr/map->JsonRpcError
                  (jr/make-response id version)))))))
 
+(defn process-requests [v]
+  (mapv process-request v))
+
+(defn process-json-rpc
+  [json-str]
+  (try (let [parsed-json (read-json json-str)]
+         (if (vector? parsed-json) ;; batch
+           (process-requests parsed-json)
+           (process-request parsed-json)))
+       (catch clojure.lang.ExceptionInfo e
+         (let [{:keys [code]} (ex-data e)]
+           (-> (let [{:keys [code message]} (get predefined-errors code)]
+                 {:data json-str
+                  :code code
+                  :message (ex-message e)})
+               jr/map->JsonRpcError
+               (jr/make-response nil nil))))))
+
 ;;;
 ;;;
 ;;;
-(defn client
-  [host port]
-  (d/chain (tcp/client {:host host, :port port})
-           #(svr/wrap-duplex-stream svr/protocol %)))
+(comment
+  (defn client
+    [host port]
+    (d/chain (tcp/client {:host host, :port port})
+             #(svr/wrap-duplex-stream svr/protocol %)))
 
-(def json-rpc-server (svr/start-server (svr/json-rpc-handler #(when-let [result (process-json-rpc %)]
-                                                                (json/write-str result)))
-                                       8888))
-(def c @(client "localhost" 8888))
-(.close json-rpc-server)
+  (def json-rpc-server (svr/start-server (svr/json-rpc-handler #(when-let [result (process-json-rpc %)]
+                                                                  (json/write-str result)))
+                                         8888))
+  (def c @(client "localhost" 8888))
+  (.close json-rpc-server)
 
-@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1" :jsonrpc "2.0")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1" :jsonrpc "2.0")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1")))
+  @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1" :jsonrpc "2.0")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1" :jsonrpc "2.0")))
+  @(s/take! c)
 
-(defn foo [& args]
-  (+ "a"))
+  (defn foo [& args]
+    (+ "a"))
 
-@(s/put! c (json/write-str (jr/make-request "foo" [1 2 3] :id "id1" :jsonrpc "2.0")))
-@(s/take! c)
+  @(s/put! c (json/write-str (jr/make-request "foo" [1 2 3] :id "id1" :jsonrpc "2.0")))
+  @(s/take! c)
 
-;; notification
-@(s/put! c (json/write-str (jr/make-request "+" [1 2 3])))
-@(s/take! c)
+  @(s/put! c (json/write-str [(jr/make-request "+" (list  1 2 3) :id "id1")
+                              (jr/make-request "+" (list  1 2 3) :id "id1" :jsonrpc "2.0")]))
+  @(s/take! c)
+
+  ;; notification
+  @(s/put! c (json/write-str (jr/make-request "+" [1 2 3])))
+  @(s/take! c)
+  )
