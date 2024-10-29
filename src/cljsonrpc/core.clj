@@ -51,7 +51,8 @@
          (catch clojure.lang.ExceptionInfo e
            (when id
              (let [{:keys [code data]} (ex-data e)]
-               (-> (let [{:keys [code message]} (get predefined-errors code)]
+               (-> (let [{:keys [code message]} (or (get predefined-errors code)
+                                                    (get user-defined-errors code))]
                      {:data data
                       :code code
                       :message (or message (ex-message e))})
@@ -73,7 +74,7 @@
          (if (vector? parsed-json) ;; batch
            (process-requests parsed-json)
            (process-request parsed-json)))
-       (catch clojure.lang.ExceptionInfo e
+       (catch clojure.lang.ExceptionInfo e ;; parse-error
          (let [{:keys [code]} (ex-data e)]
            (-> (let [{:keys [code message]} (get predefined-errors code)]
                  {:data json-str
