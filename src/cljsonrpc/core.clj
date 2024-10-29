@@ -79,42 +79,42 @@
   (d/chain (tcp/client {:host host, :port port})
            #(svr/wrap-duplex-stream svr/protocol %)))
 
-(def json-rpc-server (svr/start-server (svr/json-rpc-handler (comp json/write-str #'process-json-rpc)) 8888))
+(def json-rpc-server (svr/start-server (svr/json-rpc-handler #(when-let [result (process-json-rpc %)]
+                                                                (json/write-str result)))
+                                       8888))
 (def c @(client "localhost" 8888))
 (.close json-rpc-server)
 
-@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) "id1")))
+@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) "id1" "2.0")))
+@(s/put! c (json/write-str (jr/make-request "+" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) "id1")))
+@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) "id1" "2.0")))
+@(s/put! c (json/write-str (jr/make-request "cx" (list  1 2 3) :id "id1" :jsonrpc "2.0")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" "params" "id1")))
+@(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "+" "params" "id1" "2.0")))
+@(s/put! c (json/write-str (jr/make-request "+" "params" :id "id1" :jsonrpc "2.0")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "(" "params" "id1")))
+@(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1")))
 @(s/take! c)
 
-@(s/put! c (json/write-str (jr/make-request "(" "params" "id1" "2.0")))
+@(s/put! c (json/write-str (jr/make-request "(" "params" :id "id1" :jsonrpc "2.0")))
 @(s/take! c)
 
 (defn foo [& args]
   (+ "a"))
 
-@(s/put! c (json/write-str (jr/make-request "foo" [1 2 3] "id1" "2.0")))
+@(s/put! c (json/write-str (jr/make-request "foo" [1 2 3] :id "id1" :jsonrpc "2.0")))
 @(s/take! c)
 
 ;; notification
-@(s/put! c (jr/make-request "+" (list  1 2 3) "id1"))
-@(s/put! c (jr/make-request "+" (list  1 2 3) "id1" "2.0"))
-@(s/put! c (jr/make-request "cx" (list  1 2 3) "id1"))
-@(s/put! c (jr/make-request "cx" (list  1 2 3) "id1" "2.0"))
+@(s/put! c (json/write-str (jr/make-request "+" [1 2 3])))
+@(s/take! c)

@@ -34,12 +34,17 @@
 
 (defonce json-rpc-2 "2.0")
 
+#_(defn make-request
+    ([method params id]
+     (make-request method params id nil))
+    ([method params id version]
+     (cond-> {:method method :params params :id id}
+       (= json-rpc-2 version) (assoc :jsonrpc version))))
+
 (defn make-request
-  ([method params id]
-   (make-request method params id nil))
-  ([method params id version]
-   (cond-> {:method method :params params :id id}
-     (= json-rpc-2 version) (assoc :jsonrpc version))))
+  [method params & {:keys [id jsonrpc] :as opts}]
+  (cond-> {:method method :params params :id id}
+    (= json-rpc-2 jsonrpc) (assoc :jsonrpc jsonrpc)))
 
 ;; (defn ->clj
 ;;   [message]

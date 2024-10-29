@@ -14,7 +14,9 @@
 (defn wrap-duplex-stream
   [protocol stream]
   (let [out (s/stream)]
-    (s/connect (s/map #(io/encode protocol %) out)
+    (s/connect (s/map #(when % ;; Don't do anything for notification.
+                         (io/encode protocol %))
+                      out)
                stream)
 
     (s/splice out
