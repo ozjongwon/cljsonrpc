@@ -2,16 +2,13 @@
   (:require [aleph.tcp :as tcp]
             [gloss.core :as gloss]
             [gloss.io :as io]
-            [manifold.deferred :as d]
-            [manifold.stream :as s]
-            [clojure.data.json :as json]
-            [cljsonrpc.request-response :as jr]))
-
+            [manifold.stream :as s]))
 
 (defonce protocol (gloss/compile-frame (gloss/finite-frame :uint32
                                                            (gloss/string :utf-8))
-                                       json/write-str
-                                       json/read-str))
+                                       ;; json/write-str
+                                       ;; json/read-str
+                                       ))
 
 
 (defn wrap-duplex-stream
@@ -39,57 +36,5 @@
                       (handler (wrap-duplex-stream protocol stream) info))
                     {:port port}))
 
-(defn process-json-rpc
-  [m]
-  (let [{version "jsonrpc" method "method" params "params" id "id"} m
-        resolved (->> method
-                      symbol
-                      resolve)]
-    (try
-      (if (and resolved (->> resolved
-                             deref
-                             ifn?))
-        (jr/make-response (apply resolved params) id version)
-        (throw (ex-info "FIXME!" {:code 1 :data m})))
-      (catch clojure.lang.ExceptionInfo e
-        (let [{:keys [code data]} (ex-data e)]
-          (-> (if (= version jr/json-rpc-2)
-                {:data data
-                 :code code
-                 :message (ex-message e)}
-                {:message (ex-message e)})
-              jr/map->JsonRpcError
-              (jr/make-response id version))))
-      (catch Exception e
-        (-> (if (= jr/json-rpc-2 version)
-              {:data "FIXME-data" :code 2 :message "FIXME-message"}
-              {:message "FIXME-message"})
-            jr/map->JsonRpcError
-            (jr/make-response id version))))))
-
-(def json-rpc-server (start-server (json-rpc-handler process-json-rpc) 8888))
-
-;;;
-;;;
-;;;
-(defn client
-  [host port]
-  (d/chain (tcp/client {:host host, :port port})
-           #(wrap-duplex-stream protocol %)))
-
-(def c @(client "localhost" 8888))
-
-@(s/put! c (jr/make-request "+" (list  1 2 3) "id1"))
-@(s/take! c)
-
-@(s/put! c (jr/make-request "+" (list  1 2 3) "id1" "2.0"))
-@(s/take! c)
-
-@(s/put! c (jr/make-request "cx" (list  1 2 3) "id1"))
-@(s/take! c)
-
-@(s/put! c (jr/make-request "cx" (list  1 2 3) "id1" "2.0"))
-@(s/take! c)
-
-
-(.close json-rpc-server)
+(defn stop-server [server]
+  (.close server))
