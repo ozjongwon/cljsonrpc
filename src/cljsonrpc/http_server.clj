@@ -3,10 +3,11 @@
             [ring.util.request :as rurq]
             [ring.util.response :as rurs]
             [ring.middleware.json :as rmj]
-            [cljsonrpc.core :as c]))
+            ;; [cljsonrpc.core :as c]
+            ))
 ;;(remove-ns 'cljsonrpc.http-server)
 
-(defn req-handler 
+(defn- req-handler 
   [f]
   (fn [req]
     (let [json-str (rurq/body-string req)]
