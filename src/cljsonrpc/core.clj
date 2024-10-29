@@ -4,7 +4,7 @@
             [aleph.tcp :as tcp]
             [manifold.stream :as s]
             [manifold.deferred :as d]
-            [cljsonrpc.server :as svr]))
+            [cljsonrpc.tcp-server :as svr]))
 
 (defonce predefined-errors
   {:parse-error {:code -32700 :message "Invalid JSON was received by the server."}

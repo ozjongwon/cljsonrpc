@@ -8,6 +8,8 @@
                  [dev.weavejester/medley "1.8.1"]
                  ;;                 [clj-http "3.13.0"]
                  [org.clj-commons/gloss "0.3.6"]
+                 [ring/ring-core "1.13.0"]
+                 [ring/ring-json "0.5.1"]
                  [aleph "0.8.1"]]
   ;;  :profiles {:dev {:dependencies [[alembic "0.3.2"]]}}
   :repl-options {:init-ns cljsonrpc.core})
