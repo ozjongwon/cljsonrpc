@@ -1,6 +1,9 @@
 # cljsonrpc
 
-A Clojure library designed to ... well, that part is up to you.
+JSON-RPC(https://www.jsonrpc.org/index.html) in Clojure with:
+    - TCP based
+    - HTTP based
+    - Websocket based
 
 ## Usage
 
