@@ -1,6 +1,3 @@
-;; Levenshtein algorithm can be used to get transform operations like 'insert', 'delete', 'keep', 'replace'. But its space complexity is not great. Illustrate the best one which can get such operations with better memory usage.
-;; https://claude.ai/chat/2c8846b7-761e-4930-b0f5-f883164a2f07
-
 (ns cljsonrpc.websocket-server
   (:require [aleph.http :as http]
             [manifold.bus :as bus]
