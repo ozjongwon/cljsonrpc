@@ -20,12 +20,13 @@
 
 (defn- find-fn [fn-name]
   (loop [[ns & rest] fn-ns-list]
-    (let [resolved (->> fn-name
-                        symbol
-                        (ns-resolve (find-ns ns)))]
-      (if (ifn? resolved)
-        resolved
-        (recur rest)))))
+    (when ns
+      (let [resolved (->> fn-name
+                          symbol
+                          (ns-resolve (find-ns ns)))]
+        (if (ifn? resolved)
+          resolved
+          (recur rest))))))
 
 
 (defn read-json [str]
