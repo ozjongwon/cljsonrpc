@@ -1,8 +1,9 @@
 (ns cljsonrpc.tcp-server
-  (:require [aleph.tcp :as tcp]
-            [gloss.core :as gloss]
-            [gloss.io :as io]
-            [manifold.stream :as s]))
+  (:require
+   [aleph.tcp :as tcp]
+   [gloss.core :as gloss]
+   [gloss.io :as io]
+   [manifold.stream :as s]))
 
 (defonce protocol (gloss/compile-frame (gloss/finite-frame :uint32
                                                            (gloss/string :utf-8))))

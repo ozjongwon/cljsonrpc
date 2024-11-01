@@ -1,10 +1,11 @@
 (ns cljsonrpc.core
-  (:require [cljsonrpc.request-response :as jr]
-            [clojure.data.json :as json]
-            [aleph.tcp :as tcp]
-            [manifold.stream :as s]
-            [manifold.deferred :as d]
-            [cljsonrpc.tcp-server :as svr]))
+  (:require
+   [aleph.tcp :as tcp]
+   [cljsonrpc.request-response :as jr]
+   [cljsonrpc.tcp-server :as svr]
+   [clojure.data.json :as json]
+   [manifold.deferred :as d]
+   [manifold.stream :as s]))
 
 (defonce predefined-errors
   {:parse-error {:code -32700 :message "Invalid JSON was received by the server."}

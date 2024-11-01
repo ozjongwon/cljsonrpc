@@ -1,12 +1,12 @@
 (ns cljsonrpc.websocket-server
-  (:require [aleph.http :as http]
-            [manifold.bus :as bus]
-            [manifold.deferred :as d]
-            [manifold.stream :as s]
-            [cljsonrpc.core :as c]
-            [cljsonrpc.http-server :refer [start-server stop-server]]
-            [clojure.data.json :as json]
-            [clojure.tools.logging :as log]))
+  (:require
+   [aleph.http :as http]
+   [cljsonrpc.core :as c]
+   [cljsonrpc.http-server :refer [start-server stop-server]]
+   [clojure.data.json :as json]
+   [clojure.tools.logging :as log]
+   [manifold.deferred :as d]
+   [manifold.stream :as s]))
 
 (defn json-rpc-handler
   [f]
